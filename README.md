@@ -5,7 +5,7 @@ Frame Forge™ is the first of the self-contained HTML file, open-source, offlin
 
 All notable changes to this project will be documented in this file.
 
-#[1.2.5] - 2025-10-17
+## [1.2.5] - 2025-10-17
 
 This version focuses on user experience refinements and visual polish.
 
@@ -15,7 +15,7 @@ Improved Text Block Visibility: Increased the opacity of text block fills in the
 
 Refined Update Alert Animation: The update notification icon's animation has been changed from a simple pulse to a more visually appealing radial wave effect, better drawing attention without being distracting.
 
-[1.2.0]
+## [1.2.0]
 
 This release introduces major new functionality for responsive testing and application maintenance.
 
@@ -27,7 +27,7 @@ Automatic Update Notification System: FrameForge now automatically checks the of
 
 Internal Version Tagging: The application now includes a TOOL_VERSION constant (1.2.0) to track releases and facilitate the new update check functionality.
 
-[1.1.0]
+## [1.1.0]
 
 This release focused on professional branding, user engagement, and creating a polished first impression.
 
@@ -39,7 +39,7 @@ Complete Rebranding: The tool has been officially branded as "FrameForge" throug
 
 PayPal Contribution Button: An internet-aware contribution button has been integrated into the sidebar. It uses the navigator.onLine API to only appear when an active internet connection is detected, allowing users to support the project.
 
-[1.0.0]
+## [1.0.0]
 
 Initial public release of FrameForge.
 
