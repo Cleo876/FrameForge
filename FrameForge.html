@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FrameForge - HTML/CSS Wireframe Visualizer</title>
     <script>
-        const TOOL_VERSION = '1.1.0';
+        const TOOL_VERSION = '1.2.5';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -119,6 +119,44 @@
             height: 100%;
             transition: opacity 0.5s ease-in-out;
         }
+
+        /* Update Alert Styles */
+        .update-alert {
+            position: relative;
+            width: 10px;
+            height: 10px;
+            cursor: pointer;
+        }
+        .update-dot {
+            width: 100%;
+            height: 100%;
+            background-color: #ef4444; /* red-500 */
+            border-radius: 50%;
+            animation: pulse-wave 2s infinite;
+        }
+        @keyframes pulse-wave {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+        #update-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 9998;
+        }
+        #update-modal {
+             z-index: 9999;
+        }
     </style>
      <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -139,7 +177,12 @@
     <div id="app-container" class="flex h-screen w-full">
         <!-- Left Column: Controls & Input --><aside class="w-[30%] h-full flex flex-col p-4 bg-[#212121] shadow-lg overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
-                <h1 class="text-xl font-bold text-white">FrameForge</h1>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-white">FrameForge</h1>
+                    <div id="update-alert" class="update-alert hidden">
+                        <div class="update-dot"></div>
+                    </div>
+                </div>
                 <div id="paypal-container" class="relative group flex items-center hidden">
                     <a href="https://paypal.me/teamfras" target="_blank" rel="noopener noreferrer" class="bg-blue-600 hover:bg-blue-700 text-white w-10 h-8 flex items-center justify-center rounded-md text-lg transition-colors shadow-md">
                         <i class="fa-brands fa-paypal" style="color: #ffffff;"></i>
@@ -277,6 +320,23 @@ footer { text-align: center; margin-top: 20px; padding: 10px; background-color: 
 
     <!-- Hidden iframe for rendering the user's code --><iframe id="renderFrame" class="absolute -left-[9999px] top-0 border-none"></iframe>
 
+    <!-- Update Modal -->
+    <div id="update-modal-backdrop" class="hidden">
+        <div id="update-modal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#212121] text-white rounded-lg shadow-2xl p-6 w-96">
+            <h3 class="text-lg font-bold text-blue-400">Update Available!</h3>
+            <p class="text-gray-300 mt-2">A new version of FrameForge is available. Please visit the repository to download the latest version.</p>
+            <div class="mt-6 flex justify-end gap-3">
+                <a href="https://github.com/Cleo876/FrameForge" target="_blank" rel="noopener noreferrer" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium">
+                    Go to Repository
+                </a>
+                <button id="close-update-modal" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-md text-sm font-medium">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
         // === FRAMEFORGE SPLASH SCREEN MANAGEMENT ===
         function initSplashScreen() {
@@ -302,10 +362,57 @@ footer { text-align: center; margin-top: 20px; padding: 10px; background-color: 
             console.log('FrameForge main application starting...');
 
             const paypalContainer = document.getElementById('paypal-container');
+            const updateAlert = document.getElementById('update-alert');
+            const updateModalBackdrop = document.getElementById('update-modal-backdrop');
+            const closeUpdateModalBtn = document.getElementById('close-update-modal');
+            
+            // --- Update Checker ---
+            async function checkForUpdates() {
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/Cleo876/FrameForge/refs/heads/main/FrameForge.html');
+                    if (!response.ok) return;
+
+                    const remoteHtml = await response.text();
+                    const remoteVersionMatch = remoteHtml.match(/const TOOL_VERSION = '([\d.]+)'/);
+                    if (!remoteVersionMatch) return;
+
+                    const remoteVersion = remoteVersionMatch[1];
+                    
+                    if (isNewerVersion(remoteVersion, TOOL_VERSION)) {
+                        updateAlert.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error("Update check failed:", error);
+                }
+            }
+            
+            function isNewerVersion(remote, local) {
+                const remoteParts = remote.split('.').map(Number);
+                const localParts = local.split('.').map(Number);
+
+                for (let i = 0; i < Math.max(remoteParts.length, localParts.length); i++) {
+                    const remotePart = remoteParts[i] || 0;
+                    const localPart = localParts[i] || 0;
+                    if (remotePart > localPart) return true;
+                    if (remotePart < localPart) return false;
+                }
+                return false;
+            }
+
+            updateAlert.addEventListener('click', () => {
+                updateModalBackdrop.classList.remove('hidden');
+                const dot = updateAlert.querySelector('.update-dot');
+                if (dot) dot.style.animation = 'none';
+            });
+
+            closeUpdateModalBtn.addEventListener('click', () => {
+                updateModalBackdrop.classList.add('hidden');
+            });
             
             function updateOnlineStatus() {
                 if (navigator.onLine) {
                     paypalContainer.classList.remove('hidden');
+                    checkForUpdates();
                 } else {
                     paypalContainer.classList.add('hidden');
                 }
@@ -667,3 +774,4 @@ footer { text-align: center; margin-top: 20px; padding: 10px; background-color: 
     </script>
 </body>
 </html>
+
