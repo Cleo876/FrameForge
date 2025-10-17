@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
 
 This version focuses on user experience refinements and visual polish.
 
-Changed
+### Changed
 
 Improved Text Block Visibility: Increased the opacity of text block fills in the wireframe to 80% for better contrast and emphasis, making complex layouts easier to read.
 
@@ -19,7 +19,7 @@ Refined Update Alert Animation: The update notification icon's animation has bee
 
 This release introduces major new functionality for responsive testing and application maintenance.
 
-Added
+### Added
 
 Device Preview Switcher: A new floating toggle has been added to the top-left of the canvas. Users can now instantly switch the wireframe preview between Desktop and Mobile (375x812px) resolutions to analyze how their code responds to different viewports.
 
@@ -31,7 +31,7 @@ Internal Version Tagging: The application now includes a TOOL_VERSION constant (
 
 This release focused on professional branding, user engagement, and creating a polished first impression.
 
-Added
+### Added
 
 Professional Splash Screen: A new animated splash screen is displayed on startup, featuring the FrameForge logo, a tagline ("Visualize • Design • Code"), and a creator credit for a more professional feel.
 
@@ -43,7 +43,7 @@ PayPal Contribution Button: An internet-aware contribution button has been integ
 
 Initial public release of FrameForge.
 
-Added
+### Added
 
 Core functionality to convert raw HTML and CSS into a live, interactive wireframe diagram.
 
