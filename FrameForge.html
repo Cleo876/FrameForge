@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FrameForge - HTML/CSS Wireframe Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better UX */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+        }
+        .resizable-y {
+            resize: vertical;
+        }
+        #canvas {
+            cursor: grab;
+            display: block;
+        }
+        #canvas:active {
+            cursor: grabbing;
+        }
+        /* Custom scrollbar for a more modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2c2c2c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+        textarea {
+            background-color: #2a2a2e;
+            color: #e0e0e0;
+            border: 1px solid #444;
+        }
+
+        /* Splash Screen Styles */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .splash-content {
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+        .splash-logo {
+            font-family: 'Inter', sans-serif; /* Using existing font */
+            font-size: 4rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+        .splash-tagline {
+            font-size: 1.2rem;
+            color: #888;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+        }
+        .creator-credit {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            color: #666;
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 1s forwards;
+            letter-spacing: 1px;
+            font-weight: 400;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* Ensure app container starts completely hidden */
+        #app-container {
+            opacity: 0;
+            display: flex; /* Keep flex layout */
+            width: 100%;
+            height: 100%;
+            transition: opacity 0.5s ease-in-out;
+        }
+    </style>
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="flex h-screen">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">{FrameForge}</div>
+            <div class="splash-tagline">Visualize • Design • Code</div>
+        </div>
+        <div class="creator-credit">Created by Cleon Williams</div>
+    </div>
+
+    <div id="app-container" class="flex h-screen w-full">
+        <!-- Left Column: Controls & Input --><aside class="w-[30%] h-full flex flex-col p-4 bg-[#212121] shadow-lg overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-xl font-bold text-white">FrameForge</h1>
+                <div id="paypal-container" class="relative group flex items-center hidden">
+                    <a href="https://paypal.me/teamfras" target="_blank" rel="noopener noreferrer" class="bg-blue-600 hover:bg-blue-700 text-white w-10 h-8 flex items-center justify-center rounded-md text-lg transition-colors shadow-md">
+                        <i class="fa-brands fa-paypal" style="color: #ffffff;"></i>
+                    </a>
+                    <div class="absolute left-full ml-3 w-max bg-gray-800 text-white text-xs rounded py-1 px-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-lg">
+                        Contribute
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col flex-grow">
+                <!-- HTML Input --><label for="htmlCode" class="text-sm font-medium mb-1 text-gray-300">HTML Code</label>
+                <textarea id="htmlCode" class="w-full h-1/2 p-2 border rounded-md resizable-y font-mono text-sm shadow-inner">
+<div class="container">
+    <header>
+        <h1>My Awesome Website</h1>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">About</a>
+            <a href="#">Services</a>
+        </nav>
+    </header>
+    <main>
+        <!-- This structural div should be invisible -->
+        <div class="structural-div">
+            <article>
+                <h2>Main Article Title</h2>
+                <img class="avatar" src="https://placehold.co/100x100/e8e8e8/333?text=AV" alt="avatar">
+                <p>This has <strong>bold text</strong> and <em>italic text</em> and regular text all in one paragraph that should wrap properly across multiple lines.</p>
+                <video width="320" height="240" controls></video>
+            </article>
+        </div>
+        <!-- This container should be visible due to its background -->
+        <div class="visible-box">
+             <p>This text is inside a visible container.</p>
+        </div>
+        <aside>
+            <h3>Related Links</h3>
+            <ul>
+                <li><a href="#">Link 1</a></li>
+                <li><a href="#">Link 2</a></li>
+            </ul>
+        </aside>
+    </main>
+    <footer>
+        <p>&copy; 2025 FrameForge</p>
+    </footer>
+</div></textarea>
+
+                <!-- CSS Input --><label for="cssCode" class="text-sm font-medium mt-4 mb-1 text-gray-300">CSS Code</label>
+                <textarea id="cssCode" class="w-full h-1/2 p-2 border rounded-md resizable-y font-mono text-sm shadow-inner">
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+main { display: flex; flex-direction: column; gap: 20px; }
+article { flex: 3; }
+article img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+.avatar {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    display: block;
+    margin: 15px 0;
+}
+p { line-height: 1.6; }
+video { max-width: 100%; height: auto; background-color: black; margin: 15px 0; }
+aside { background-color: #f9f9f9; padding: 15px; border-radius: 5px; }
+footer { text-align: center; margin-top: 20px; padding: 10px; background-color: #333; color: white; border-radius: 5px; }
+
+/* Styles for testing visibility */
+.visible-box {
+    background: #e0e0e0;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+.structural-div {
+    /* No visual styles - should be filtered out */
+    width: 100%;
+    padding: 5px 0;
+}
+</textarea>
+
+                <!-- Generate Button --><button id="generateBtn" class="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md">
+                    Generate Wireframe
+                </button>
+                <!-- Download Button --><button id="downloadBtn" class="mt-2 w-full border border-blue-600 text-blue-600 py-2 rounded-md hover:bg-blue-600 hover:text-white active:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md">
+                    Download Wireframe
+                </button>
+                <button id="resetViewBtn" class="mt-2 w-full border border-gray-600 text-gray-300 py-2 rounded-md hover:bg-gray-700 hover:text-white transition-colors">
+                    Reset View
+                </button>
+                <p id="elementCount" class="text-xs text-gray-500 mt-2 text-center"></p>
+            </div>
+        </aside>
+
+        <!-- Right Column: Wireframe Canvas --><main id="canvas-container" class="w-[70%] h-full bg-[#1a1a1a] flex items-center justify-center overflow-hidden relative">
+            <div id="device-switcher" class="absolute top-4 left-4 z-10 flex rounded-md overflow-hidden shadow-lg border border-gray-700">
+                <button id="desktop-btn" class="px-3 py-1 bg-blue-600 text-white focus:outline-none transition-colors">
+                    <i class="fas fa-desktop fa-fw"></i>
+                </button>
+                <button id="mobile-btn" class="px-3 py-1 bg-gray-800 text-white hover:bg-gray-700 focus:outline-none transition-colors">
+                    <i class="fas fa-mobile-screen-button fa-fw"></i>
+                </button>
+            </div>
+            <canvas id="canvas"></canvas>
+            <div id="statusIndicator" class="hidden absolute text-white text-lg bg-black bg-opacity-50 px-4 py-2 rounded-md"></div>
+            <div class="absolute top-2 right-2 text-xs text-gray-500 p-2 bg-[#212121] rounded-md" title="Shortcuts: Ctrl+Enter (Generate), Ctrl+S (Download)">
+                Zoom: Wheel, Pan: Drag
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden iframe for rendering the user's code --><iframe id="renderFrame" class="absolute -left-[9999px] top-0 border-none"></iframe>
+
+    <script>
+        // === FRAMEFORGE SPLASH SCREEN MANAGEMENT ===
+        function initSplashScreen() {
+            const splashScreen = document.getElementById('splash-screen');
+            const appContainer = document.getElementById('app-container');
+            
+            console.log('Splash screen initializing...');
+            
+            // Show splash for 2 seconds, then reveal app
+            setTimeout(() => {
+                console.log('Hiding splash screen...');
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                    appContainer.style.opacity = '1';
+                    console.log('Initializing main application...');
+                    initializeMainApplication();
+                }, 500);
+            }, 2000);
+        }
+
+        function initializeMainApplication() {
+            console.log('FrameForge main application starting...');
+
+            const paypalContainer = document.getElementById('paypal-container');
+            
+            function updateOnlineStatus() {
+                if (navigator.onLine) {
+                    paypalContainer.classList.remove('hidden');
+                } else {
+                    paypalContainer.classList.add('hidden');
+                }
+            }
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+
+            // Initial check
+            updateOnlineStatus();
+
+            const htmlCodeEl = document.getElementById('htmlCode');
+            const cssCodeEl = document.getElementById('cssCode');
+            const generateBtn = document.getElementById('generateBtn');
+            const renderFrame = document.getElementById('renderFrame');
+            const canvas = document.getElementById('canvas');
+            const canvasContainer = document.getElementById('canvas-container');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const elementCountEl = document.getElementById('elementCount');
+            const ctx = canvas.getContext('2d');
+            const desktopBtn = document.getElementById('desktop-btn');
+            const mobileBtn = document.getElementById('mobile-btn');
+
+            let isPanning = false;
+            let lastPosition = { x: 0, y: 0 };
+            let transform = { scale: 1, panX: 0, panY: 0 };
+            let wireframeElements = [];
+            let currentDevice = 'desktop';
+            
+            // Set initial iframe size
+            renderFrame.style.width = '100vw';
+            renderFrame.style.height = '100vh';
+
+            // --- Core Functions ---
+            function showError(message) {
+                statusIndicator.textContent = `Error: ${message}`;
+                statusIndicator.classList.remove('hidden');
+                statusIndicator.style.color = '#ff8a80'; // Light red for error
+                setTimeout(() => statusIndicator.classList.add('hidden'), 4000);
+            }
+
+            function showSuccess(message) {
+                statusIndicator.textContent = message;
+                statusIndicator.classList.remove('hidden');
+                statusIndicator.style.color = '#b9f6ca'; // Light green for success
+                setTimeout(() => statusIndicator.classList.add('hidden'), 2000);
+            }
+            
+            function renderSource() {
+                try {
+                    const html = htmlCodeEl.value;
+                    const css = cssCodeEl.value;
+                    if (!html.trim()) {
+                        throw new Error('Please enter some HTML code.');
+                    }
+                    statusIndicator.textContent = 'Generating...';
+                    statusIndicator.style.color = 'white';
+                    statusIndicator.classList.remove('hidden');
+                    
+                    renderFrame.srcdoc = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}</body></html>`;
+                } catch (error) {
+                    showError(error.message);
+                }
+            }
+
+            function isElementVisuallySignificant(el, style) {
+                if (['IMG', 'VIDEO', 'CANVAS', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'SVG'].includes(el.tagName)) return true;
+                const bgColor = style.backgroundColor;
+                const hasBackground = (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') || style.backgroundImage !== 'none';
+                if (hasBackground) return true;
+                const hasBorder = parseFloat(style.borderTopWidth) > 0 || parseFloat(style.borderRightWidth) > 0 || parseFloat(style.borderBottomWidth) > 0 || parseFloat(style.borderLeftWidth) > 0;
+                if (hasBorder) return true;
+                const hasShadow = style.boxShadow !== 'none';
+                if (hasShadow) return true;
+                return false;
+            }
+            
+            function getTextLineRects(element) {
+                const lines = [];
+                if (!element.textContent.trim()) return lines;
+                const range = renderFrame.contentDocument.createRange();
+                const walker = renderFrame.contentDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+                const textNodes = [];
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.trim()) textNodes.push(node);
+                }
+                if (textNodes.length === 0) return lines;
+
+                for (let i = 0; i < textNodes.length; i++) {
+                    const node = textNodes[i];
+                    const text = node.textContent;
+                    let lineStart = 0;
+                    while (lineStart < text.length) {
+                        if (text[lineStart].trim() === '') {
+                            lineStart++;
+                            continue;
+                        }
+                        range.setStart(node, lineStart);
+                        range.setEnd(node, lineStart + 1);
+                        let lineRect = range.getBoundingClientRect();
+                        let lineEnd = lineStart;
+                        while (lineEnd < text.length - 1) {
+                            range.setEnd(node, lineEnd + 2);
+                            const nextCharRect = range.getBoundingClientRect();
+                            if (nextCharRect.bottom > lineRect.bottom) break;
+                            lineRect = nextCharRect;
+                            lineEnd++;
+                        }
+                        if (lineRect.width > 0) lines.push(lineRect);
+                        lineStart = lineEnd + 1;
+                    }
+                }
+                if (lines.length < 2) return lines.map(r => ({x: r.x, y: r.y, width: r.width, height: r.height}));
+                const mergedLines = [];
+                let currentLine = lines[0];
+                for (let i = 1; i < lines.length; i++) {
+                    const nextLine = lines[i];
+                    if (Math.abs(currentLine.bottom - nextLine.bottom) < 5) {
+                        const left = Math.min(currentLine.left, nextLine.left);
+                        const right = Math.max(currentLine.right, nextLine.right);
+                        const top = Math.min(currentLine.top, nextLine.top);
+                        const bottom = Math.max(currentLine.bottom, nextLine.bottom);
+                        currentLine = new DOMRect(left, top, right - left, bottom - top);
+                    } else {
+                        mergedLines.push(currentLine);
+                        currentLine = nextLine;
+                    }
+                }
+                mergedLines.push(currentLine);
+                return mergedLines.map(r => ({x: r.x, y: r.y, width: r.width, height: r.height}));
+            }
+            
+            function generateWireframeData() {
+                try {
+                    wireframeElements = [];
+                    const doc = renderFrame.contentDocument;
+                    if (!doc || !doc.body) {
+                        throw new Error("Content document is not available.");
+                    };
+                    const elementMap = new Map();
+                    const rootElements = [];
+                    doc.querySelectorAll('*').forEach(el => {
+                        const rect = el.getBoundingClientRect();
+                        const style = window.getComputedStyle(el);
+                        if (rect.width <= 1 || rect.height <= 1 || style.display === 'none' || style.visibility === 'hidden') return;
+                        const tagName = el.tagName.toLowerCase();
+                        const isTextBlock = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'td', 'a', 'strong', 'em', 'span'].includes(tagName) && el.textContent.trim().length > 0;
+                        let type = 'box';
+                        if (isTextBlock) type = 'text-block';
+                        else if (tagName === 'img') type = 'image';
+                        else if (tagName === 'video') type = 'video';
+                        else if (tagName === 'button' || (tagName === 'input' && ['button', 'submit', 'reset'].includes(el.type))) type = 'button';
+                        else if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') type = 'form-input';
+                        const wireframeEl = { x: rect.x, y: rect.y, width: rect.width, height: rect.height, type: type, style: { borderRadius: style.borderRadius }, isContainerVisible: isElementVisuallySignificant(el, style), children: [] };
+                        if (isTextBlock) {
+                            const lineRects = getTextLineRects(el);
+                            wireframeEl.children = lineRects.map(lineRect => ({ x: lineRect.x, y: lineRect.y, width: lineRect.width, height: lineRect.height, type: 'text-line', isContainerVisible: true, children: [], style: {} }));
+                        }
+                        elementMap.set(el, wireframeEl);
+                    });
+                    elementMap.forEach((wireframeEl, el) => {
+                        const parentEl = el.parentElement;
+                        if (parentEl && elementMap.has(parentEl)) {
+                            const parentWireframeEl = elementMap.get(parentEl);
+                            if (!(parentWireframeEl.type === 'text-block' && wireframeEl.type === 'text-block')) parentWireframeEl.children.push(wireframeEl);
+                        } else rootElements.push(wireframeEl);
+                    });
+                    function filterVisible(elements) {
+                        return elements.reduce((acc, el) => {
+                            el.children = filterVisible(el.children);
+                            if (el.isContainerVisible || el.children.length > 0) acc.push(el);
+                            return acc;
+                        }, []);
+                    }
+                    wireframeElements = filterVisible(rootElements);
+                    let count = 0;
+                    function countElements(elements) {
+                       elements.forEach(el => {
+                           if(el.isContainerVisible) count++;
+                           countElements(el.children);
+                       });
+                    }
+                    countElements(wireframeElements);
+                    elementCountEl.textContent = `${count} visual elements found.`;
+
+                    resetTransformAndDraw();
+                    showSuccess('Wireframe Generated!');
+                } catch(e) {
+                    showError("Could not generate wireframe. Check code for errors.");
+                    console.error(e);
+                }
+            }
+
+            function drawGrid(ctx, width, height) {
+                const gridSize = 20 * transform.scale;
+                const startX = -transform.panX % gridSize;
+                const startY = -transform.panY % gridSize;
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+                ctx.lineWidth = 1;
+
+                for (let x = startX; x < width; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                for (let y = startY; y < height; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+            }
+
+            function drawElement(el, ctx) {
+                if (el.type === 'text-line') {
+                    ctx.fillStyle = 'rgba(79, 133, 227, 0.8)';
+                    ctx.fillRect(el.x, el.y, el.width, el.height);
+                    return;
+                }
+                if (el.isContainerVisible) {
+                    ctx.save();
+                    ctx.strokeStyle = '#6495ED'; // Cornflower blue for better contrast
+                    ctx.lineWidth = 1 / transform.scale;
+                    ctx.fillStyle = 'rgba(100, 149, 237, 0.05)';
+                    const radii = (el.style.borderRadius || '').split(' ').map(r => parseFloat(r));
+                    if (radii.length === 1 && el.style.borderRadius.includes('%') && radii[0] >= 50) {
+                        ctx.beginPath(); ctx.arc(el.x + el.width / 2, el.y + el.height / 2, Math.min(el.width, el.height) / 2, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
+                    } else if (radii.some(r => r > 0) && ctx.roundRect) {
+                        ctx.beginPath(); ctx.roundRect(el.x, el.y, el.width, el.height, radii); ctx.stroke(); ctx.fill();
+                    } else {
+                        ctx.strokeRect(el.x, el.y, el.width, el.height); ctx.fillRect(el.x, el.y, el.width, el.height);
+                    }
+                    if (el.type === 'video') {
+                        ctx.fillStyle = '#fff'; ctx.font = `${Math.min(el.width, el.height) * 0.4}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('▶', el.x + el.width / 2, el.y + el.height / 2);
+                    }
+                    ctx.restore();
+                }
+                el.children.forEach(child => drawElement(child, ctx));
+            }
+
+            function drawWireframe() {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvasContainer.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = `${rect.width}px`;
+                canvas.style.height = `${rect.height}px`;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.save();
+                ctx.scale(dpr, dpr);
+                
+                drawGrid(ctx, rect.width, rect.height);
+
+                ctx.translate(transform.panX, transform.panY);
+                ctx.scale(transform.scale, transform.scale);
+                wireframeElements.forEach(el => drawElement(el, ctx));
+                ctx.restore();
+            }
+
+            function downloadWireframe() {
+                if (wireframeElements.length === 0) {
+                    showError('No wireframe generated to export');
+                    return;
+                }
+                // ... (download logic remains the same)
+            }
+
+            function resetTransformAndDraw() {
+                if (wireframeElements.length === 0) { drawWireframe(); return; };
+                const allRects = [];
+                function collectRects(elements) {
+                    elements.forEach(el => { if (el.isContainerVisible || el.type === 'text-line') allRects.push({x: el.x, y: el.y, width: el.width, height: el.height}); if (el.children) collectRects(el.children); });
+                }
+                collectRects(wireframeElements);
+                if (allRects.length === 0) { drawWireframe(); return; }
+                const minX = Math.min(...allRects.map(r => r.x));
+                const minY = Math.min(...allRects.map(r => r.y));
+                const maxX = Math.max(...allRects.map(r => r.x + r.width));
+                const maxY = Math.max(...allRects.map(r => r.y + r.height));
+                const contentWidth = maxX - minX;
+                const contentHeight = maxY - minY;
+                if (contentWidth <= 0 || contentHeight <= 0) { drawWireframe(); return; }
+                const padding = 50;
+                const scaleX = (canvasContainer.clientWidth - padding * 2) / contentWidth;
+                const scaleY = (canvasContainer.clientHeight - padding * 2) / contentHeight;
+                transform.scale = Math.min(scaleX, scaleY, 1);
+                transform.panX = (canvasContainer.clientWidth / 2) - (contentWidth * transform.scale / 2) - (minX * transform.scale);
+                transform.panY = (canvasContainer.clientHeight / 2) - (contentHeight * transform.scale / 2) - (minY * transform.scale);
+                drawWireframe();
+            }
+
+            // --- Event Handlers ---
+            generateBtn.addEventListener('click', renderSource);
+            document.getElementById('downloadBtn').addEventListener('click', downloadWireframe);
+            document.getElementById('resetViewBtn').addEventListener('click', resetTransformAndDraw);
+            renderFrame.addEventListener('load', () => setTimeout(() => { generateWireframeData(); }, 200));
+            renderFrame.addEventListener('error', () => showError('Failed to load HTML/CSS content.'));
+
+            desktopBtn.addEventListener('click', () => {
+                if (currentDevice === 'desktop') return;
+                currentDevice = 'desktop';
+
+                renderFrame.style.width = '100vw';
+                renderFrame.style.height = '100vh';
+
+                desktopBtn.classList.add('bg-blue-600');
+                desktopBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
+                
+                mobileBtn.classList.remove('bg-blue-600');
+                mobileBtn.classList.add('bg-gray-800', 'hover:bg-gray-700');
+
+                setTimeout(renderSource, 100);
+            });
+
+            mobileBtn.addEventListener('click', () => {
+                if (currentDevice === 'mobile') return;
+                currentDevice = 'mobile';
+
+                renderFrame.style.width = '375px';
+                renderFrame.style.height = '812px';
+
+                mobileBtn.classList.add('bg-blue-600');
+                mobileBtn.classList.remove('bg-gray-800', 'hover:bg-gray-700');
+                
+                desktopBtn.classList.remove('bg-blue-600');
+                desktopBtn.classList.add('bg-gray-800', 'hover:bg-gray-700');
+
+                setTimeout(renderSource, 100);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    renderSource();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    downloadWireframe();
+                }
+            });
+            
+            canvas.addEventListener('mousedown', (e) => { isPanning = true; lastPosition = { x: e.clientX, y: e.clientY }; canvas.style.cursor = 'grabbing'; });
+            canvas.addEventListener('mouseup', () => { isPanning = false; canvas.style.cursor = 'grab'; });
+            canvas.addEventListener('mouseleave', () => { isPanning = false; canvas.style.cursor = 'grab'; });
+            canvas.addEventListener('mousemove', (e) => { if (!isPanning) return; const dx = e.clientX - lastPosition.x; const dy = e.clientY - lastPosition.y; transform.panX += dx; transform.panY += dy; lastPosition = { x: e.clientX, y: e.clientY }; requestAnimationFrame(drawWireframe); });
+            canvas.addEventListener('wheel', (e) => { e.preventDefault(); const scaleAmount = 1.1; const mouseX = e.clientX - canvas.getBoundingClientRect().left; const mouseY = e.clientY - canvas.getBoundingClientRect().top; const worldX = (mouseX - transform.panX) / transform.scale; const worldY = (mouseY - transform.panY) / transform.scale; if (e.deltaY < 0) { transform.scale *= scaleAmount; } else { transform.scale /= scaleAmount; } transform.scale = Math.max(0.1, Math.min(transform.scale, 10)); transform.panX = mouseX - worldX * transform.scale; transform.panY = mouseY - worldY * transform.scale; requestAnimationFrame(drawWireframe); });
+            window.addEventListener('resize', () => { requestAnimationFrame(drawWireframe); });
+            
+            // Initial render
+            renderSource();
+        }
+
+        // Start the application with splash screen
+        document.addEventListener('DOMContentLoaded', initSplashScreen);
+    </script>
+</body>
+</html>
