@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FrameForge - HTML/CSS Wireframe Visualizer</title>
     <script>
-        const TOOL_VERSION = '1.2.5';
+        const TOOL_VERSION = '1.2.6';
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -678,7 +678,233 @@ footer { text-align: center; margin-top: 20px; padding: 10px; background-color: 
                     showError('No wireframe generated to export');
                     return;
                 }
-                // ... (download logic remains the same)
+
+                // Calculate exact content bounds
+                const allRects = [];
+                function collectRects(elements) {
+                    elements.forEach(el => { 
+                        if (el.isContainerVisible || el.type === 'text-line') {
+                            allRects.push({
+                                x: el.x, 
+                                y: el.y, 
+                                width: el.width, 
+                                height: el.height,
+                                right: el.x + el.width,
+                                bottom: el.y + el.height
+                            }); 
+                        }
+                        if (el.children) collectRects(el.children); 
+                    });
+                }
+                collectRects(wireframeElements);
+
+                if (allRects.length === 0) {
+                    showError('No visible content to export');
+                    return;
+                }
+
+                const minX = Math.min(...allRects.map(r => r.x));
+                const minY = Math.min(...allRects.map(r => r.y));
+                const maxX = Math.max(...allRects.map(r => r.right));
+                const maxY = Math.max(...allRects.map(r => r.bottom));
+
+                const contentWidth = maxX - minX;
+                const contentHeight = maxY - minY;
+
+                if (contentWidth <= 0 || contentHeight <= 0) {
+                    showError('No visible content to export');
+                    return;
+                }
+
+                // High DPI settings for true 2K quality
+                const targetPPI = 144; // High PPI for crisp rendering
+                const basePPI = 96; // Standard screen PPI
+                
+                // Calculate DPI scale factor
+                const dpiScale = targetPPI / basePPI;
+                
+                // Set canvas to true 2K resolution with high DPI
+                const exportCanvas = document.createElement('canvas');
+                const exportCtx = exportCanvas.getContext('2d', { alpha: false });
+
+                // Calculate content aspect ratio
+                const contentAspectRatio = contentWidth / contentHeight;
+                
+                // 2K resolution bounds
+                const max2KWidth = 2560;
+                const max2KHeight = 1440;
+                const max2KAspectRatio = max2KWidth / max2KHeight;
+
+                // Calculate optimal dimensions that maintain aspect ratio and fit within 2K
+                let canvasWidth, canvasHeight;
+                
+                if (contentAspectRatio > max2KAspectRatio) {
+                    // Content is wider than 2K aspect ratio - constrain by width
+                    canvasWidth = Math.min(contentWidth * dpiScale, max2KWidth);
+                    canvasHeight = canvasWidth / contentAspectRatio;
+                } else {
+                    // Content is taller than 2K aspect ratio - constrain by height
+                    canvasHeight = Math.min(contentHeight * dpiScale, max2KHeight);
+                    canvasWidth = canvasHeight * contentAspectRatio;
+                }
+
+                // Add proportional padding (5% of smallest dimension)
+                const padding = Math.min(canvasWidth, canvasHeight) * 0.05;
+                canvasWidth += padding * 2;
+                canvasHeight += padding * 2;
+
+                // Ensure we don't exceed 2K bounds even with padding
+                if (canvasWidth > max2KWidth) {
+                    canvasWidth = max2KWidth;
+                    canvasHeight = canvasWidth / contentAspectRatio;
+                }
+                if (canvasHeight > max2KHeight) {
+                    canvasHeight = max2KHeight;
+                    canvasWidth = canvasHeight * contentAspectRatio;
+                }
+
+                // Set final canvas dimensions
+                exportCanvas.width = Math.round(canvasWidth);
+                exportCanvas.height = Math.round(canvasHeight);
+
+                // Calculate the actual scale factor based on our final dimensions
+                const availableContentWidth = canvasWidth - padding * 2;
+                const availableContentHeight = canvasHeight - padding * 2;
+                const scaleX = availableContentWidth / contentWidth;
+                const scaleY = availableContentHeight / contentHeight;
+                const finalScale = Math.min(scaleX, scaleY); // Use the smaller scale to ensure fit
+
+                // High-quality rendering settings
+                exportCtx.imageSmoothingEnabled = false;
+                exportCtx.textRendering = 'geometricPrecision';
+                
+                // Fill background
+                exportCtx.fillStyle = '#1a1a1a';
+                exportCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // Apply transformation with proper centering
+                exportCtx.save();
+                
+                // Calculate centering offsets
+                const scaledContentWidth = contentWidth * finalScale;
+                const scaledContentHeight = contentHeight * finalScale;
+                const offsetX = (canvasWidth - scaledContentWidth) / 2;
+                const offsetY = (canvasHeight - scaledContentHeight) / 2;
+                
+                exportCtx.translate(offsetX - minX * finalScale, offsetY - minY * finalScale);
+                exportCtx.scale(finalScale, finalScale);
+
+                // Draw high-resolution grid
+                function drawHighResGrid(ctx) {
+                    const gridSize = 20;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                    ctx.lineWidth = 1;
+                    
+                    const startX = Math.floor(minX / gridSize) * gridSize;
+                    const startY = Math.floor(minY / gridSize) * gridSize;
+                    const endX = Math.ceil(maxX / gridSize) * gridSize;
+                    const endY = Math.ceil(maxY / gridSize) * gridSize;
+                    
+                    for (let x = startX; x <= endX; x += gridSize) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, startY);
+                        ctx.lineTo(x, endY);
+                        ctx.stroke();
+                    }
+                    for (let y = startY; y <= endY; y += gridSize) {
+                        ctx.beginPath();
+                        ctx.moveTo(startX, y);
+                        ctx.lineTo(endX, y);
+                        ctx.stroke();
+                    }
+                }
+
+                drawHighResGrid(exportCtx);
+
+                // Enhanced high-resolution element rendering
+                function drawElementForExport(el, ctx) {
+                    if (el.type === 'text-line') {
+                        ctx.fillStyle = 'rgba(79, 133, 227, 0.3)';
+                        ctx.fillRect(el.x, el.y, el.width, el.height);
+                        return;
+                    }
+
+                    if (el.isContainerVisible) {
+                        ctx.save();
+                        
+                        ctx.strokeStyle = '#4a86e8';
+                        ctx.lineWidth = 1.5;
+                        ctx.fillStyle = el.type === 'text-block' ? 
+                            'rgba(79, 133, 227, 0.04)' : 
+                            'rgba(79, 133, 227, 0.06)';
+
+                        const radii = (el.style.borderRadius || '').split(' ').map(r => parseFloat(r));
+                        
+                        if (radii.length === 1 && el.style.borderRadius.includes('%') && radii[0] >= 50) {
+                            ctx.beginPath();
+                            ctx.arc(
+                                el.x + el.width / 2, 
+                                el.y + el.height / 2, 
+                                Math.min(el.width, el.height) / 2, 
+                                0, 
+                                Math.PI * 2
+                            );
+                            ctx.stroke(); 
+                            ctx.fill();
+                        } else if (radii.some(r => r > 0) && ctx.roundRect) {
+                            ctx.beginPath();
+                            ctx.roundRect(el.x, el.y, el.width, el.height, radii);
+                            ctx.stroke(); 
+                            ctx.fill();
+                        } else {
+                            ctx.strokeRect(el.x, el.y, el.width, el.height);
+                            ctx.fillRect(el.x, el.y, el.width, el.height);
+                        }
+
+                        if (el.type === 'video') {
+                            ctx.fillStyle = '#ffffff';
+                            const fontSize = Math.min(el.width, el.height) * 0.25;
+                            ctx.font = `bold ${fontSize}px 'Arial', sans-serif`;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText('▶', el.x + el.width / 2, el.y + el.height / 2);
+                        }
+                        
+                        ctx.restore();
+                    }
+                    
+                    el.children.forEach(child => drawElementForExport(child, ctx));
+                }
+
+                // Render all elements with high quality
+                wireframeElements.forEach(el => drawElementForExport(el, exportCtx));
+                
+                exportCtx.restore();
+
+                // Create download
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const link = document.createElement('a');
+                
+                // Determine resolution classification
+                const actualWidth = Math.round(canvasWidth);
+                const actualHeight = Math.round(canvasHeight);
+                let resolution;
+                if (actualWidth >= 2560 && actualHeight >= 1440) {
+                    resolution = '2K';
+                } else if (actualWidth >= 1920 && actualHeight >= 1080) {
+                    resolution = 'FullHD';
+                } else {
+                    resolution = 'HD';
+                }
+                
+                link.download = `wireframe-${resolution}-${actualWidth}x${actualHeight}-${timestamp}.png`;
+                link.href = exportCanvas.toDataURL('image/png', 1.0);
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showSuccess(`Downloaded ${resolution} Wireframe (${actualWidth}×${actualHeight})`);
             }
 
             function resetTransformAndDraw() {
@@ -771,4 +997,3 @@ footer { text-align: center; margin-top: 20px; padding: 10px; background-color: 
     </script>
 </body>
 </html>
-
